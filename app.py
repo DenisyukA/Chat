@@ -1,26 +1,9 @@
 import eventlet
 eventlet.monkey_patch()
 
+import os
 import cloudinary
 import cloudinary.uploader
-
-# Налаштування (підтягуємо з Environment Variables)
-cloudinary.config(
-  cloud_name = os.environ.get('CLOUDINARY_NAME'),
-  api_key = os.environ.get('CLOUDINARY_KEY'),
-  api_secret = os.environ.get('CLOUDINARY_SECRET')
-)
-
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    file_to_upload = request.files['file']
-    if file_to_upload:
-        # Завантажуємо в хмару
-        upload_result = cloudinary.uploader.upload(file_to_upload)
-        # Повертаємо пряме посилання на файл
-        return jsonify({"url": upload_result['secure_url']}), 200
-
-import os
 from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
@@ -28,10 +11,17 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pentagon_top_secret')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'pentagon_absolute_secret')
 
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///local_v5.db')
-if database_url.startswith("postgres://"):
+# Налаштування Cloudinary (дані візьмемо з Environment Variables на Render)
+cloudinary.config(
+  cloud_name = os.environ.get('CLOUDINARY_NAME'),
+  api_key = os.environ.get('CLOUDINARY_KEY'),
+  api_secret = os.environ.get('CLOUDINARY_SECRET')
+)
+
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///chat_final.db')
+if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -40,37 +30,46 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# --- МОДЕЛІ ---
+# --- МОДЕЛІ ДАНИХ ---
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False) # @tag
-    nickname = db.Column(db.String(50), nullable=False) # Display Name
+    nickname = db.Column(db.String(50), nullable=False) # Ім'я, яке бачать всі
     password_hash = db.Column(db.String(255), nullable=False)
     color = db.Column(db.String(20), default='#5bc0de')
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(50), nullable=False)
-    recipient = db.Column(db.String(50), nullable=True) # None = Global
-    text = db.Column(db.String(1000))
-    file_url = db.Column(db.String(500), nullable=True) # Для фото/відео/голосових
-    msg_type = db.Column(db.String(20), default='text') # text, image, voice, video
-    color = db.Column(db.String(20)) # Колір автора на момент відправки
+    sender = db.Column(db.String(50), nullable=False) # username відправника
+    recipient = db.Column(db.String(50), nullable=True) # None = Глобал чат
+    text = db.Column(db.String(1000), nullable=True)
+    file_url = db.Column(db.String(500), nullable=True)
+    msg_type = db.Column(db.String(20), default='text') # text або image
+    color = db.Column(db.String(20)) # Колір ніка відправника
 
 with app.app_context():
     db.create_all()
 
-# --- API ---
+# --- API РОУТИ ---
 
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file"}), 400
+    file = request.files['file']
+    upload_result = cloudinary.uploader.upload(file)
+    return jsonify({"url": upload_result['secure_url']}), 200
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
     if User.query.filter_by(username=data['username']).first():
-        return jsonify({"error": "Такий username вже зайнятий!"}), 400
+        return jsonify({"error": "Цей username вже зайнятий!"}), 400
     
     new_user = User(
         username=data['username'],
@@ -92,7 +91,7 @@ def login():
             "nickname": user.nickname,
             "color": user.color
         }), 200
-    return jsonify({"error": "Невірні дані"}), 401
+    return jsonify({"error": "Невірний логін або пароль"}), 401
 
 @app.route('/api/update_profile', methods=['POST'])
 def update_profile():
@@ -103,31 +102,31 @@ def update_profile():
         user.color = data.get('color', user.color)
         db.session.commit()
         return jsonify({"status": "success"}), 200
-    return jsonify({"error": "Юзера не знайдено"}), 404
+    return jsonify({"error": "User not found"}), 404
 
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     user = request.args.get('user')
-    other = request.args.get('other') # Якщо шукаємо приватний чат
+    other = request.args.get('other') # "global" або username співрозмовника
 
     if other == "global":
-        msgs = Message.query.filter_by(recipient=None).all()
+        msgs = Message.query.filter_by(recipient=None).order_by(Message.id.asc()).all()
     else:
-        # Приватний чат між двома
         msgs = Message.query.filter(
             ((Message.sender == user) & (Message.recipient == other)) |
             ((Message.sender == other) & (Message.recipient == user))
-        ).all()
+        ).order_by(Message.id.asc()).all()
     
     return jsonify([{
-        "sender": m.sender, 
-        "text": m.text, 
-        "type": m.msg_type, 
+        "sender": m.sender,
+        "text": m.text,
+        "type": m.msg_type,
         "file": m.file_url,
         "color": m.color
     } for m in msgs])
 
 # --- SOCKETS ---
+
 connected_users = {}
 
 @socketio.on('join')
@@ -137,7 +136,6 @@ def on_join(data):
 
 @socketio.on('send_msg')
 def handle_msg(data):
-    # Зберігаємо
     msg = Message(
         sender=data['sender'],
         recipient=data.get('recipient'),
@@ -150,13 +148,19 @@ def handle_msg(data):
     db.session.commit()
 
     if msg.recipient:
-        # В приват
         if msg.recipient in connected_users:
             emit('new_msg', data, to=connected_users[msg.recipient])
         emit('new_msg', data, to=request.sid)
     else:
-        # В глобал
         emit('new_msg', data, broadcast=True)
+
+@socketio.on('disconnect')
+def on_disconnect():
+    for user, sid in list(connected_users.items()):
+        if sid == request.sid:
+            del connected_users[user]
+            emit('update_online', list(connected_users.keys()), broadcast=True)
+            break
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
