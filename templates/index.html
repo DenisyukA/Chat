@@ -3,45 +3,43 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
-    <title>Secure Comms v4</title>
+    <title>Pentagon Messenger</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; }
+        :root { --bg: #0f0f0f; --side: #181818; --active: #2b5278; --text: #e0e0e0; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1e1e1e; padding: 20px; }
-        .auth-box { background: #2a2a2a; padding: 30px; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
-        .auth-box input, .auth-box button { width: 100%; margin-bottom: 15px; padding: 12px; border-radius: 4px; border: none; font-size: 16px; outline: none; }
-        .auth-box input { background: #1e1e1e; color: #fff; border: 1px solid #444; }
-        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #444; }
-        .auth-tab { flex: 1; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
-        .auth-tab.active { color: #5bc0de; border-bottom: 2px solid #5bc0de; margin-bottom: -2px; }
-        
-        #main-app { display: none; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; width: 100%; }
-        .header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        #search-box { flex: 1; padding: 8px 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; max-width: 300px; }
-        
-        .chat-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 180px; background: #1a1a1a; border-right: 1px solid #333; overflow-y: auto; padding: 10px; }
-        .user-online { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 5px; font-size: 14px; background: #2a2a2a; transition: 0.2s; }
-        .user-online:hover { background: #333; }
-        .user-online.selected { background: #007bff; font-weight: bold; }
-        
-        #messages { flex: 1; padding: 15px; overflow-y: auto; background: #121212; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 10px 14px; background: #2a2a2a; border-radius: 8px; word-wrap: break-word; align-self: flex-start; max-width: 85%; border-left: 3px solid #5bc0de; }
-        .message.private { border: 1px dashed #ffc107; background: #2b2b1e; border-left: 3px solid #ffc107; }
-        .message span.author { font-weight: bold; margin-right: 5px; }
-        
-        .input-area { padding: 10px; background: #1e1e1e; border-top: 1px solid #333; display: flex; gap: 10px; align-items: center; }
-        #message-text { flex: 1; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; }
-        button { padding: 12px 20px; background: #007bff; border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        #recipient-badge { display: none; background: #ffc107; color: #000; padding: 8px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        /* SIDEBAR */
+        .sidebar { width: 300px; background: var(--side); border-right: 1px solid #333; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .chat-list { flex: 1; overflow-y: auto; }
+        .chat-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #222; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .chat-item:hover { background: #222; }
+        .chat-item.active { background: var(--active); }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #444; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
+        /* MAIN CHAT */
+        .main-container { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 70%; position: relative; }
+        .msg.mine { align-self: flex-end; background: #2b5278; border-bottom-right-radius: 2px; }
+        .msg.theirs { align-self: flex-start; background: #212121; border-bottom-left-radius: 2px; }
+        .msg .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 4px; display: block; }
+
+        .input-bar { padding: 15px; background: var(--side); display: flex; gap: 10px; align-items: center; }
+        input[type="text"] { flex: 1; padding: 10px; border-radius: 20px; border: none; background: #222; color: #fff; outline: none; }
+        
+        /* SETTINGS MODAL */
+        #settings-modal { display: none; position: absolute; top: 50px; left: 50px; background: #2a2a2a; padding: 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; }
+        
+        /* AUTH SCREEN */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .auth-box { background: var(--side); padding: 30px; border-radius: 12px; width: 350px; text-align: center; }
+        .auth-box input { width: 100%; margin-bottom: 10px; padding: 12px; background: #222; border: 1px solid #333; color: #fff; border-radius: 5px; }
+        
         @media (max-width: 600px) {
-            .chat-container { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; max-height: 80px; border-right: none; border-bottom: 1px solid #333; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; padding: 10px; }
-            .user-online { display: inline-block; margin-bottom: 0; }
-            .header { flex-wrap: wrap; }
-            #search-box { min-width: 100%; margin-top: 10px; }
+            .sidebar { width: 80px; }
+            .sidebar span { display: none; }
+            .sidebar-header button { font-size: 10px; }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -50,177 +48,170 @@
 
     <div id="auth-screen">
         <div class="auth-box">
-            <div class="auth-tabs">
-                <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">ВХІД</div>
-                <div class="auth-tab" id="tab-register" onclick="switchTab('register')">РЕЄСТРАЦІЯ</div>
-            </div>
-            <input type="text" id="auth-username" placeholder="Позивний">
-            <input type="password" id="auth-password" placeholder="Пароль">
-            <div id="color-picker-container" style="display: none; align-items: center; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                <label style="color: #aaa; font-size: 14px;">Колір ніка:</label>
-                <input type="color" id="auth-color" value="#5bc0de" style="width: 40px; height: 40px; padding: 0;">
-            </div>
-            <button id="auth-btn" onclick="handleAuth()">Увійти</button>
-            <div id="auth-error" style="color: #ff4c4c; font-size: 14px; margin-top: 10px;"></div>
+            <h2 id="auth-title">Вхід</h2>
+            <input type="text" id="auth-user" placeholder="@username">
+            <input type="text" id="auth-nick" placeholder="Display Name (для реєстрації)" style="display:none">
+            <input type="password" id="auth-pass" placeholder="Пароль">
+            <button onclick="handleAuth()" id="auth-btn">Увійти</button>
+            <p onclick="toggleAuthMode()" style="cursor:pointer; font-size: 12px; color: #888; margin-top: 15px;">Немає акаунту? Реєстрація</p>
         </div>
     </div>
 
-    <div id="main-app">
-        <div class="header">
-            <div id="user-info" style="min-width: 150px;">...</div>
-            <input type="text" id="search-box" onkeyup="searchMessages()" placeholder="Пошук в історії...">
-            <button onclick="logout()" style="background: #dc3545; padding: 8px 15px;">Вихід</button>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <span id="my-nick">...</span>
+            <button onclick="toggleSettings()" style="background:none; border:none; color:#5bc0de; cursor:pointer">⚙️</button>
         </div>
-
-        <div class="chat-container">
-            <div class="sidebar">
-                <h4 style="margin-top: 0; color: #888; font-size: 12px; margin-bottom: 5px;">ОНЛАЙН</h4>
-                <div id="online-users"></div>
+        <div class="chat-list" id="chat-list">
+            <div class="chat-item active" onclick="switchChat('global')">
+                <div class="avatar" style="background:#444">G</div>
+                <span>Глобальний чат</span>
             </div>
-            <div id="messages"></div>
+            </div>
+    </div>
+
+    <div class="main-container">
+        <div id="settings-modal">
+            <h3>Налаштування</h3>
+            <input type="text" id="set-nick" placeholder="Новий нік">
+            <input type="color" id="set-color" style="width: 100%; margin-bottom: 10px;">
+            <button onclick="saveSettings()">Зберегти</button>
+            <button onclick="toggleSettings()" style="background:#444">Закрити</button>
         </div>
 
-        <div class="input-area">
-            <div id="recipient-badge" onclick="clearRecipient()">Глобально</div>
-            <input type="text" id="message-text" placeholder="Повідомлення..." autocomplete="off">
-            <button onclick="sendMessage()">TX</button>
+        <div id="messages"></div>
+
+        <div class="input-bar">
+            <button title="Фото/Відео" onclick="alert('Для медіа підключи Cloudinary API')">📎</button>
+            <input type="text" id="msg-input" placeholder="Повідомлення...">
+            <button onclick="send()" id="send-btn">➤</button>
         </div>
     </div>
 
     <script>
-        let currentMode = 'login';
-        let myUsername = "";
-        let myColor = "";
-        let currentRecipient = null;
+        let me = JSON.parse(localStorage.getItem('p_user')) || null;
+        let activeChat = 'global'; // 'global' або '@username'
         let socket = null;
+        let isRegister = false;
 
-        window.onload = () => {
-            const savedUser = localStorage.getItem('chat_user');
-            const savedColor = localStorage.getItem('chat_color');
-            if (savedUser && savedColor) {
-                myUsername = savedUser;
-                myColor = savedColor;
-                initChat();
-            }
-        };
+        if (me) init();
 
-        function switchTab(mode) {
-            currentMode = mode;
-            document.getElementById('tab-login').classList.remove('active');
-            document.getElementById('tab-register').classList.remove('active');
-            document.getElementById(`tab-${mode}`).classList.add('active');
-            document.getElementById('color-picker-container').style.display = (mode === 'register') ? 'flex' : 'none';
-            document.getElementById('auth-btn').textContent = (mode === 'login') ? 'Увійти' : 'Зареєструватись';
-            document.getElementById('auth-error').textContent = '';
+        function toggleAuthMode() {
+            isRegister = !isRegister;
+            document.getElementById('auth-title').innerText = isRegister ? 'Реєстрація' : 'Вхід';
+            document.getElementById('auth-nick').style.display = isRegister ? 'block' : 'none';
+            document.getElementById('auth-btn').innerText = isRegister ? 'Створити акаунт' : 'Увійти';
         }
 
         async function handleAuth() {
-            const user = document.getElementById('auth-username').value.trim();
-            const pass = document.getElementById('auth-password').value;
-            const errorBox = document.getElementById('auth-error');
+            const username = document.getElementById('auth-user').value.trim();
+            const password = document.getElementById('auth-pass').value;
+            const nickname = document.getElementById('auth-nick').value.trim();
 
-            if (!user || !pass) return errorBox.textContent = "Заповніть всі поля";
+            const route = isRegister ? '/api/register' : '/api/login';
+            const body = { username, password, nickname };
 
-            const endpoint = currentMode === 'login' ? '/api/login' : '/api/register';
-            const payload = { username: user, password: pass };
-            if (currentMode === 'register') payload.color = document.getElementById('auth-color').value;
+            const res = await fetch(window.location.origin + route, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
 
-            try {
-                const response = await fetch(window.location.origin + endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    if (currentMode === 'register') {
-                        switchTab('login');
-                        return;
-                    }
-                    myUsername = user;
-                    myColor = result.color;
-                    localStorage.setItem('chat_user', myUsername);
-                    localStorage.setItem('chat_color', myColor);
-                    initChat();
-                } else {
-                    errorBox.textContent = result.error;
-                }
-            } catch (err) { errorBox.textContent = "Помилка з'єднання"; }
+            if (res.ok) {
+                if (isRegister) { toggleAuthMode(); return alert("Тепер увійдіть!"); }
+                me = data;
+                localStorage.setItem('p_user', JSON.stringify(me));
+                init();
+            } else alert(data.error);
         }
 
-        function logout() {
-            localStorage.removeItem('chat_user');
-            localStorage.removeItem('chat_color');
-            location.reload();
-        }
-
-        function initChat() {
+        function init() {
             document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('user-info').innerHTML = `Оператор: <strong style="color:${myColor}">${myUsername}</strong>`;
+            document.getElementById('my-nick').innerText = me.nickname;
             socket = io();
-            socket.emit('register_socket', { username: myUsername });
+            socket.emit('join', { username: me.username });
+
             loadHistory();
-            socket.on('receive_message', (data) => appendMessage(data.username, data.color, data.text, data.recipient));
-            socket.on('update_users', (users) => {
-                const onlineDiv = document.getElementById('online-users');
-                onlineDiv.innerHTML = '';
-                users.forEach(user => {
-                    const uDiv = document.createElement('div');
-                    uDiv.className = 'user-online';
-                    if (user === currentRecipient) uDiv.classList.add('selected');
-                    uDiv.textContent = user;
-                    uDiv.onclick = () => setRecipient(user);
-                    onlineDiv.appendChild(uDiv);
+
+            socket.on('new_msg', (data) => {
+                // Малюємо лише якщо це активний чат
+                const isGlobal = !data.recipient && activeChat === 'global';
+                const isPrivate = data.recipient && (data.sender === activeChat || data.sender === me.username);
+                if (isGlobal || isPrivate) appendMsg(data);
+            });
+
+            socket.on('update_online', (users) => {
+                const list = document.getElementById('chat-list');
+                // Очищаємо крім Глобалу
+                list.innerHTML = `<div class="chat-item ${activeChat === 'global' ? 'active' : ''}" onclick="switchChat('global')">
+                    <div class="avatar">G</div><span>Глобальний чат</span></div>`;
+                
+                users.forEach(u => {
+                    if (u === me.username) return;
+                    const div = document.createElement('div');
+                    div.className = `chat-item ${activeChat === u ? 'active' : ''}`;
+                    div.onclick = () => switchChat(u);
+                    div.innerHTML = `<div class="avatar">${u[0].toUpperCase()}</div><span>${u}</span>`;
+                    list.appendChild(div);
                 });
             });
         }
 
         async function loadHistory() {
-            const response = await fetch(window.location.origin + `/api/messages?user=${myUsername}`);
-            const history = await response.json();
+            const res = await fetch(window.location.origin + `/api/messages?user=${me.username}&other=${activeChat}`);
+            const data = await res.json();
             document.getElementById('messages').innerHTML = '';
-            history.forEach(msg => appendMessage(msg.username, msg.color, msg.text, msg.recipient));
+            data.forEach(appendMsg);
         }
 
-        function appendMessage(user, color, text, recipient) {
-            const messagesDiv = document.getElementById('messages');
-            const msgElement = document.createElement('div');
-            msgElement.className = recipient ? 'message private' : 'message';
-            msgElement.innerHTML = `<span class="author" style="color:${color}">${user}${recipient ? ' ➔ ' + recipient : ''}:</span> ${text}`;
-            messagesDiv.appendChild(msgElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        function switchChat(target) {
+            activeChat = target;
+            loadHistory();
+            document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+            // Візуальний апдейт селектора
         }
 
-        function searchMessages() {
-            const input = document.getElementById('search-box').value.toLowerCase();
-            const messages = document.getElementsByClassName('message');
-            for (let m of messages) {
-                m.style.display = m.innerText.toLowerCase().includes(input) ? "block" : "none";
+        function appendMsg(m) {
+            const div = document.createElement('div');
+            const isMine = (m.sender === me.username || m.username === me.username);
+            div.className = `msg ${isMine ? 'mine' : 'theirs'}`;
+            div.innerHTML = `<span class="sender-name" style="color:${m.color}">${m.sender || m.username}</span>${m.text}`;
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        }
+
+        function send() {
+            const input = document.getElementById('msg-input');
+            if (!input.value) return;
+            const data = {
+                sender: me.username,
+                recipient: activeChat === 'global' ? null : activeChat,
+                text: input.value,
+                color: me.color,
+                type: 'text'
+            };
+            socket.emit('send_msg', data);
+            input.value = '';
+        }
+
+        function toggleSettings() {
+            const m = document.getElementById('settings-modal');
+            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function saveSettings() {
+            const nickname = document.getElementById('set-nick').value || me.nickname;
+            const color = document.getElementById('set-color').value;
+            const res = await fetch(window.location.origin + '/api/update_profile', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: me.username, nickname, color })
+            });
+            if (res.ok) {
+                me.nickname = nickname; me.color = color;
+                localStorage.setItem('p_user', JSON.stringify(me));
+                location.reload();
             }
         }
-
-        function setRecipient(user) {
-            if (user === myUsername) return;
-            currentRecipient = user;
-            document.getElementById('recipient-badge').style.display = 'block';
-            document.getElementById('recipient-badge').textContent = `Приват: ${user} ✖`;
-        }
-
-        function clearRecipient() {
-            currentRecipient = null;
-            document.getElementById('recipient-badge').style.display = 'none';
-        }
-
-        function sendMessage() {
-            const textInput = document.getElementById('message-text');
-            const text = textInput.value.trim();
-            if (!text || !socket) return;
-            socket.emit('send_message', { username: myUsername, color: myColor, text: text, recipient: currentRecipient });
-            textInput.value = '';
-        }
-
-        document.getElementById('message-text').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
     </script>
 </body>
 </html>
