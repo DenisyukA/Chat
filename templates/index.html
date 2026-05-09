@@ -3,77 +3,80 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
-    <title>Secure Comms</title>
+    <title>Secure Comms v4</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; }
-
-        /* Екран логіну */
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1e1e1e; padding: 20px; }
-        .login-box { background: #2a2a2a; padding: 30px; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
-        .login-box input, .login-box button { width: 100%; margin-bottom: 15px; padding: 12px; border-radius: 4px; border: none; font-size: 16px; }
-
-        /* Основний інтерфейс чату */
-        #main-app { display: none; flex-direction: column; height: 100vh; max-width: 800px; margin: 0 auto; width: 100%; }
-        .header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-
+        
+        #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1e1e1e; padding: 20px; }
+        .auth-box { background: #2a2a2a; padding: 30px; border-radius: 8px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        .auth-box input, .auth-box button { width: 100%; margin-bottom: 15px; padding: 12px; border-radius: 4px; border: none; font-size: 16px; outline: none; }
+        .auth-box input { background: #1e1e1e; color: #fff; border: 1px solid #444; }
+        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #444; }
+        .auth-tab { flex: 1; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
+        .auth-tab.active { color: #5bc0de; border-bottom: 2px solid #5bc0de; margin-bottom: -2px; }
+        
+        #main-app { display: none; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; width: 100%; }
+        .header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        #search-box { flex: 1; padding: 8px 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; max-width: 300px; }
+        
         .chat-container { display: flex; flex: 1; overflow: hidden; }
-
-        /* Список онлайн юзерів */
-        .sidebar { width: 150px; background: #1a1a1a; border-right: 1px solid #333; overflow-y: auto; padding: 10px; }
-        .sidebar h4 { margin-top: 0; font-size: 14px; color: #888; }
-        .user-online { cursor: pointer; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 14px; background: #2a2a2a; }
-        .user-online:hover { background: #007bff; }
-        .user-online.selected { background: #28a745; font-weight: bold; }
-
-        /* Зона повідомлень */
+        .sidebar { width: 180px; background: #1a1a1a; border-right: 1px solid #333; overflow-y: auto; padding: 10px; }
+        .user-online { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 5px; font-size: 14px; background: #2a2a2a; transition: 0.2s; }
+        .user-online:hover { background: #333; }
+        .user-online.selected { background: #007bff; font-weight: bold; }
+        
         #messages { flex: 1; padding: 15px; overflow-y: auto; background: #121212; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 10px 14px; background: #2a2a2a; border-radius: 8px; word-wrap: break-word; align-self: flex-start; max-width: 85%; }
-        .message.private { border: 1px dashed #ffc107; background: #2b2b1e; }
+        .message { padding: 10px 14px; background: #2a2a2a; border-radius: 8px; word-wrap: break-word; align-self: flex-start; max-width: 85%; border-left: 3px solid #5bc0de; }
+        .message.private { border: 1px dashed #ffc107; background: #2b2b1e; border-left: 3px solid #ffc107; }
         .message span.author { font-weight: bold; margin-right: 5px; }
-
-        /* Панель вводу */
+        
         .input-area { padding: 10px; background: #1e1e1e; border-top: 1px solid #333; display: flex; gap: 10px; align-items: center; }
         #message-text { flex: 1; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; }
         button { padding: 12px 20px; background: #007bff; border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        #recipient-badge { display: none; background: #ffc107; color: #000; padding: 8px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-        #recipient-badge { display: none; background: #ffc107; color: #000; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
-
-        /* Мобільна адаптація */
         @media (max-width: 600px) {
             .chat-container { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; max-height: 100px; border-right: none; border-bottom: 1px solid #333; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; padding: 10px; align-items: center;}
+            .sidebar { width: 100%; height: auto; max-height: 80px; border-right: none; border-bottom: 1px solid #333; display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; padding: 10px; }
             .user-online { display: inline-block; margin-bottom: 0; }
+            .header { flex-wrap: wrap; }
+            #search-box { min-width: 100%; margin-top: 10px; }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2>Ідентифікація</h2>
-            <input type="text" id="login-name" placeholder="Введіть позивний">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                <label>Колір ніка:</label>
-                <input type="color" id="login-color" value="#5bc0de" style="width: 50px; height: 40px; padding: 0;">
+    <div id="auth-screen">
+        <div class="auth-box">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">ВХІД</div>
+                <div class="auth-tab" id="tab-register" onclick="switchTab('register')">РЕЄСТРАЦІЯ</div>
             </div>
-            <button onclick="enterChat()">Увійти в систему</button>
+            <input type="text" id="auth-username" placeholder="Позивний">
+            <input type="password" id="auth-password" placeholder="Пароль">
+            <div id="color-picker-container" style="display: none; align-items: center; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                <label style="color: #aaa; font-size: 14px;">Колір ніка:</label>
+                <input type="color" id="auth-color" value="#5bc0de" style="width: 40px; height: 40px; padding: 0;">
+            </div>
+            <button id="auth-btn" onclick="handleAuth()">Увійти</button>
+            <div id="auth-error" style="color: #ff4c4c; font-size: 14px; margin-top: 10px;"></div>
         </div>
     </div>
 
     <div id="main-app">
         <div class="header">
-            <div id="user-info">...</div>
-            <button onclick="location.reload()" style="padding: 5px 10px; background: #dc3545;">Вийти</button>
+            <div id="user-info" style="min-width: 150px;">...</div>
+            <input type="text" id="search-box" onkeyup="searchMessages()" placeholder="Пошук в історії...">
+            <button onclick="logout()" style="background: #dc3545; padding: 8px 15px;">Вихід</button>
         </div>
 
         <div class="chat-container">
             <div class="sidebar">
-                <h4>Онлайн (клік для привату)</h4>
+                <h4 style="margin-top: 0; color: #888; font-size: 12px; margin-bottom: 5px;">ОНЛАЙН</h4>
                 <div id="online-users"></div>
             </div>
-
             <div id="messages"></div>
         </div>
 
@@ -85,135 +88,139 @@
     </div>
 
     <script>
-        const socket = io();
+        let currentMode = 'login';
         let myUsername = "";
         let myColor = "";
-        let currentRecipient = null; // null = глобальний чат
+        let currentRecipient = null;
+        let socket = null;
 
-        // 1. ВХІД У ЧАТ
-        function enterChat() {
-            const nameInput = document.getElementById('login-name').value.trim();
-            if (!nameInput) return alert("Введіть позивний");
-
-            myUsername = nameInput;
-            myColor = document.getElementById('login-color').value;
-
-            // Ховаємо логін, показуємо чат
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('user-info').innerHTML = `Позивний: <strong style="color:${myColor}">${myUsername}</strong>`;
-
-            // Реєструємось на сокет-сервері
-            socket.emit('register', { username: myUsername });
-
-            // Завантажуємо історію
-            loadHistory();
-        }
-
-        // 2. ЗАВАНТАЖЕННЯ ІСТОРІЇ
-        async function loadHistory() {
-            try {
-                // Передаємо свій нік, щоб сервер віддав нам наші привати
-                const response = await fetch(window.location.origin + `/api/messages?user=${myUsername}`);
-                const history = await response.json();
-
-                document.getElementById('messages').innerHTML = ''; // Чистимо екран
-                history.forEach(msg => {
-                    appendMessage(msg.username, msg.color, msg.text, msg.recipient);
-                });
-            } catch (error) {
-                console.error("Помилка БД:", error);
+        window.onload = () => {
+            const savedUser = localStorage.getItem('chat_user');
+            const savedColor = localStorage.getItem('chat_color');
+            if (savedUser && savedColor) {
+                myUsername = savedUser;
+                myColor = savedColor;
+                initChat();
             }
+        };
+
+        function switchTab(mode) {
+            currentMode = mode;
+            document.getElementById('tab-login').classList.remove('active');
+            document.getElementById('tab-register').classList.remove('active');
+            document.getElementById(`tab-${mode}`).classList.add('active');
+            document.getElementById('color-picker-container').style.display = (mode === 'register') ? 'flex' : 'none';
+            document.getElementById('auth-btn').textContent = (mode === 'login') ? 'Увійти' : 'Зареєструватись';
+            document.getElementById('auth-error').textContent = '';
         }
 
-        // 3. МАЛЮВАННЯ ПОВІДОМЛЕННЯ
+        async function handleAuth() {
+            const user = document.getElementById('auth-username').value.trim();
+            const pass = document.getElementById('auth-password').value;
+            const errorBox = document.getElementById('auth-error');
+
+            if (!user || !pass) return errorBox.textContent = "Заповніть всі поля";
+
+            const endpoint = currentMode === 'login' ? '/api/login' : '/api/register';
+            const payload = { username: user, password: pass };
+            if (currentMode === 'register') payload.color = document.getElementById('auth-color').value;
+
+            try {
+                const response = await fetch(window.location.origin + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    if (currentMode === 'register') {
+                        switchTab('login');
+                        return;
+                    }
+                    myUsername = user;
+                    myColor = result.color;
+                    localStorage.setItem('chat_user', myUsername);
+                    localStorage.setItem('chat_color', myColor);
+                    initChat();
+                } else {
+                    errorBox.textContent = result.error;
+                }
+            } catch (err) { errorBox.textContent = "Помилка з'єднання"; }
+        }
+
+        function logout() {
+            localStorage.removeItem('chat_user');
+            localStorage.removeItem('chat_color');
+            location.reload();
+        }
+
+        function initChat() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('user-info').innerHTML = `Оператор: <strong style="color:${myColor}">${myUsername}</strong>`;
+            socket = io();
+            socket.emit('register_socket', { username: myUsername });
+            loadHistory();
+            socket.on('receive_message', (data) => appendMessage(data.username, data.color, data.text, data.recipient));
+            socket.on('update_users', (users) => {
+                const onlineDiv = document.getElementById('online-users');
+                onlineDiv.innerHTML = '';
+                users.forEach(user => {
+                    const uDiv = document.createElement('div');
+                    uDiv.className = 'user-online';
+                    if (user === currentRecipient) uDiv.classList.add('selected');
+                    uDiv.textContent = user;
+                    uDiv.onclick = () => setRecipient(user);
+                    onlineDiv.appendChild(uDiv);
+                });
+            });
+        }
+
+        async function loadHistory() {
+            const response = await fetch(window.location.origin + `/api/messages?user=${myUsername}`);
+            const history = await response.json();
+            document.getElementById('messages').innerHTML = '';
+            history.forEach(msg => appendMessage(msg.username, msg.color, msg.text, msg.recipient));
+        }
+
         function appendMessage(user, color, text, recipient) {
             const messagesDiv = document.getElementById('messages');
             const msgElement = document.createElement('div');
-
-            // Якщо є recipient - оформлюємо як приватне
-            if (recipient) {
-                msgElement.className = 'message private';
-                msgElement.innerHTML = `<span class="author" style="color:${color}">${user} ➔ ${recipient}:</span> ${text}`;
-            } else {
-                msgElement.className = 'message';
-                msgElement.innerHTML = `<span class="author" style="color:${color}">${user}:</span> ${text}`;
-            }
-
+            msgElement.className = recipient ? 'message private' : 'message';
+            msgElement.innerHTML = `<span class="author" style="color:${color}">${user}${recipient ? ' ➔ ' + recipient : ''}:</span> ${text}`;
             messagesDiv.appendChild(msgElement);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // 4. ПРИЙОМ ПОВІДОМЛЕНЬ
-        socket.on('receive_message', function(data) {
-            appendMessage(data.username, data.color, data.text, data.recipient);
-        });
-
-        // 5. ОНОВЛЕННЯ СПИСКУ ОНЛАЙН
-        socket.on('update_users', function(users) {
-            const onlineDiv = document.getElementById('online-users');
-            onlineDiv.innerHTML = '';
-
-            users.forEach(user => {
-                const uDiv = document.createElement('div');
-                uDiv.className = 'user-online';
-                // Виділяємо поточного співрозмовника
-                if (user === currentRecipient) uDiv.classList.add('selected');
-
-                uDiv.textContent = user;
-
-                // Клік по юзеру - перехід у приват
-                uDiv.onclick = () => setRecipient(user);
-                onlineDiv.appendChild(uDiv);
-            });
-
-            // Якщо наший співрозмовник вийшов
-            if (currentRecipient && !users.includes(currentRecipient)) {
-                clearRecipient();
+        function searchMessages() {
+            const input = document.getElementById('search-box').value.toLowerCase();
+            const messages = document.getElementsByClassName('message');
+            for (let m of messages) {
+                m.style.display = m.innerText.toLowerCase().includes(input) ? "block" : "none";
             }
-        });
+        }
 
-        // 6. УПРАВЛІННЯ ПРИВАТАМИ
         function setRecipient(user) {
-            if (user === myUsername) return; // Самому собі не пишемо
+            if (user === myUsername) return;
             currentRecipient = user;
-
-            const badge = document.getElementById('recipient-badge');
-            badge.style.display = 'block';
-            badge.textContent = `Приват: ${user} (✖)`;
-
-            // Оновлюємо візуал в списку
-            document.querySelectorAll('.user-online').forEach(el => {
-                el.classList.remove('selected');
-                if (el.textContent === user) el.classList.add('selected');
-            });
+            document.getElementById('recipient-badge').style.display = 'block';
+            document.getElementById('recipient-badge').textContent = `Приват: ${user} ✖`;
         }
 
         function clearRecipient() {
             currentRecipient = null;
             document.getElementById('recipient-badge').style.display = 'none';
-            document.querySelectorAll('.user-online').forEach(el => el.classList.remove('selected'));
         }
 
-        // 7. ВІДПРАВКА
         function sendMessage() {
             const textInput = document.getElementById('message-text');
             const text = textInput.value.trim();
-
-            if (!text) return;
-
-            socket.emit('send_message', {
-                username: myUsername,
-                color: myColor,
-                text: text,
-                recipient: currentRecipient // Якщо null - полетить усім
-            });
+            if (!text || !socket) return;
+            socket.emit('send_message', { username: myUsername, color: myColor, text: text, recipient: currentRecipient });
             textInput.value = '';
         }
 
-        document.getElementById('message-text').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
+        document.getElementById('message-text').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
     </script>
 </body>
 </html>
