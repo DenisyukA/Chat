@@ -1,6 +1,25 @@
 import eventlet
 eventlet.monkey_patch()
 
+import cloudinary
+import cloudinary.uploader
+
+# Налаштування (підтягуємо з Environment Variables)
+cloudinary.config(
+  cloud_name = os.environ.get('CLOUDINARY_NAME'),
+  api_key = os.environ.get('CLOUDINARY_KEY'),
+  api_secret = os.environ.get('CLOUDINARY_SECRET')
+)
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    file_to_upload = request.files['file']
+    if file_to_upload:
+        # Завантажуємо в хмару
+        upload_result = cloudinary.uploader.upload(file_to_upload)
+        # Повертаємо пряме посилання на файл
+        return jsonify({"url": upload_result['secure_url']}), 200
+
 import os
 from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
